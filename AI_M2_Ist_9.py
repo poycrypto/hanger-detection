@@ -16,21 +16,19 @@ def resource_path(relative):
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative)
 
-def put_boxes(box, frame):
+def put_boxes(box, frame, label):
     # bounding box
     global x1,y1,x2,y2
     confidence = math.ceil(box.conf[0]*100)/100
 
-    #put box in cam
-    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 1)
-
-    #put text in cam
+    #put text and box in cam
+    color = (0,0,255) if label == 'nok' else (0,255,0)
     org = [x1, y1-5]
     font = cv2.FONT_HERSHEY_SIMPLEX
     fontScale = 0.5
-    color = (0, 255, 0)
     thickness = 1
     cv2.putText(frame, ("%.2f") % confidence, org, font, fontScale, color, thickness)
+    cv2.rectangle(frame, (x1, y1), (x2, y2), color, 1)
 
 
 def put_text(frame, text):
@@ -98,7 +96,7 @@ def main():
     plc = snap7.client.Client()
 
     cap = get_video(0)
-    pt = resource_path('best.pt')
+    pt = resource_path('best_nok.pt')
     model = YOLO(pt)
     
     # pt2 =resource_path("handle_cover_small_v2_openvino_model/")
@@ -143,10 +141,11 @@ def main():
                     boxes = sorted(boxes, key=lambda x: x.xyxy[0][0])
                     
                     for box in boxes:
-                        labels.append(r.names[int(box.cls[0])]) 
+                        label = r.names[int(box.cls[0])]
+                        labels.append(label) 
                         x1, y1, x2, y2 = box.xyxy[0]
                         x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2) # convert to int values
-                        put_boxes(box, frame) 
+                        put_boxes(box, frame, label) 
                 
                 if recipe_no == 1 and len(boxes) == 2:
                     if labels[0] == "bezel" and labels[1] == "askilik":
